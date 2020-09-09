@@ -3,8 +3,8 @@ const Token = require('../utils/token');
 const logger = require('../config/winston');
 
 const registerUser = (req, res) => {
-  if (!req.body.email || !req.body.password) {
-    return res.status(400).json({ msg: 'You need to send email and password' });
+  if (!req.body.email || !req.body.password || !req.body.name || !req.body.phone) {
+    return res.status(400).json({ msg: 'You must fill in all the information' });
   }
 
   User.findOne({ email: req.body.email }, (err, user) => {
@@ -22,7 +22,7 @@ const registerUser = (req, res) => {
 
 const loginUser = (req, res) => {
   if (!req.body.email || !req.body.password) {
-    return res.status(400).json({ msg: 'You need to send email and password' });
+    return res.status(400).json({ msg: 'You must send email and password' });
   }
 
   User.findOne({ email: req.body.email }, (err, user) => {
@@ -31,7 +31,9 @@ const loginUser = (req, res) => {
 
     user.comparePassword(req.body.password, (err, isMatch) => {
       if (isMatch && !err) {
-        return res.status(200).json({ token: Token.createToken(user) });
+        return res
+          .status(200)
+          .json({ id: user.id, email: user.email, name: user.name, phone: user.phone, token: Token.createToken(user) });
       } else {
         return res.status(400).json({ msg: "Email and password don't match" });
       }

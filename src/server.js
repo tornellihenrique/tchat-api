@@ -1,12 +1,13 @@
-const express = require('express');
+const app = require('express')();
 const bodyParser = require('body-parser');
 const passport = require('passport');
+const socket = require('socket.io');
 const morgan = require('morgan');
-const db = require('./config/db');
+const cors = require('cors');
 const logger = require('./config/winston');
 const port = process.env.PORT || 5000;
 
-const app = express();
+require('./config/db')();
 
 app.use(morgan('combined', { stream: logger.stream }));
 app.use(function (err, req, res, next) {
@@ -19,6 +20,7 @@ app.use(function (err, req, res, next) {
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(passport.initialize());
+app.use(cors());
 
 const passportMiddleware = require('./middleware/passport');
 passport.use(passportMiddleware);
@@ -29,7 +31,11 @@ app.get('/', (req, res) => {
 
 app.use('/api', require('./routes'));
 
-db();
+const http = require('http').createServer(app);
 
-app.listen(port);
-logger.log({ level: 'info', message: `Server running at http://localhost:${port}` });
+const io = (module.exports.io = socket(http));
+io.on('connection', require('./socket'));
+
+http.listen(port, () => {
+  logger.log({ level: 'info', message: `Server running at http://localhost:${port}` });
+});

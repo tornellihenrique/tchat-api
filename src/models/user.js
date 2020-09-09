@@ -14,6 +14,15 @@ const UserSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  name: {
+    type: String,
+    required: true,
+  },
+  phone: {
+    type: String,
+    required: true,
+    trim: true,
+  },
 });
 
 UserSchema.pre('save', function (next) {
