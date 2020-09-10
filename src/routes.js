@@ -3,10 +3,6 @@ const express = require('express'),
 const userController = require('./controller/user-controller');
 const passport = require('passport');
 
-routes.get('/', (req, res) => {
-  return res.send('Salve cambada');
-});
-
 routes.post('/register', userController.registerUser);
 routes.post('/login', userController.loginUser);
 

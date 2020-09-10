@@ -1,31 +1,81 @@
 const { v4: uuidv4 } = require('uuid');
+const ChatModel = require('../models/chat');
+const MessageModel = require('../models/message');
+const UserModel = require('../models/user');
+const SocketModel = require('../models/socket');
 
-const createUser = (userId, socketId = null) => ({
-  userId,
-  socketId,
-});
+const onUserConnect = async (socketId, userId) => {
+  const socketSearch = await SocketModel.findOne({
+    socketId,
+    user: userId,
+  });
 
-const createMessage = (message = '', sender = '') => ({
-  id: uuidv4(),
-  time: getTime(new Date(Date.now())),
-  message,
-  sender,
-});
+  if (socketSearch) {
+    await socketSearch.remove();
+  }
 
-const createChat = (messages = [], name = 'Community', users = []) => ({
-  id: uuidv4(),
-  name,
-  messages,
-  users,
-  typingUsers: [],
-});
+  const socketToCreate = await SocketModel.create({
+    socketId,
+    user: userId,
+  });
+
+  await socketToCreate.save();
+};
+
+const onUserDisconnect = async (socketId, userId) => {
+  const socketToRemove = userId
+    ? await SocketModel.findOne({
+        socketId,
+        user: userId,
+      })
+    : await SocketModel.findOne({
+        socketId,
+      });
+
+  if (socketToRemove) {
+    await socketToRemove.remove();
+  }
+};
+
+const onMessageOut = async message => {
+  const user = await UserModel.findById(message.userId);
+  const recipient = await UserModel.findById(message.recipientId);
+
+  if (!user || !recipient) {
+    return;
+  }
+
+  const createdMessage = await (
+    await MessageModel.create({
+      text: message.text,
+      date: new Date(),
+      user,
+    })
+  ).save();
+
+  const userChat = await handleChat(createdMessage, user, recipient);
+  const recipientChat = await handleChat(createdMessage, recipient, user);
+
+  return { createdMessage, userChat, recipientChat };
+};
 
 const getTime = date => {
   return `${date.getHours()}:${('0' + date.getMinutes()).slice(-2)}`;
 };
 
+const handleChat = async (message, user, recipient) => {
+  let chat = await ChatModel.findOne({ user, recipient });
+
+  if (!chat) {
+    chat = await ChatModel.create({ user, recipient });
+  }
+
+  chat.messages.push(message);
+  return (await chat.save());
+};
+
 module.exports = {
-  createMessage,
-  createChat,
-  createUser,
+  onUserConnect,
+  onUserDisconnect,
+  onMessageOut,
 };
