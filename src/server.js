@@ -9,29 +9,33 @@ const port = process.env.PORT || 5000;
 
 require('./config/db')();
 
-app.use(morgan('combined', { stream: logger.stream }));
-app.use(function (err, req, res, next) {
-  res.locals.message = err.message;
-  res.locals.error = err;
-  logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
-  res.status(err.status || 500);
-  res.render('error');
-});
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-app.use(passport.initialize());
-app.use(cors());
+try {
+  app.use(morgan('combined', { stream: logger.stream }));
+  app.use(function (err, req, res, next) {
+    res.locals.message = err.message;
+    res.locals.error = err;
+    logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+    res.status(err.status || 500);
+    res.render('error');
+  });
+  app.use(bodyParser.urlencoded({ extended: false }));
+  app.use(bodyParser.json());
+  app.use(passport.initialize());
+  app.use(cors());
 
-const passportMiddleware = require('./middleware/passport');
-passport.use(passportMiddleware);
+  const passportMiddleware = require('./middleware/passport');
+  passport.use(passportMiddleware);
 
-app.use('/api', require('./routes'));
+  app.use('/api', require('./routes'));
 
-const http = require('http').createServer(app);
+  const http = require('http').createServer(app);
 
-const io = (module.exports.io = socket(http));
-io.on('connection', require('./socket'));
+  const io = (module.exports.io = socket(http));
+  io.on('connection', require('./socket'));
 
-http.listen(port, () => {
-  logger.log({ level: 'info', message: `Server running at http://localhost:${port}` });
-});
+  http.listen(port, () => {
+    logger.log({ level: 'info', message: `Server running at http://localhost:${port}` });
+  });
+} catch (e) {
+  console.error(e);
+}
