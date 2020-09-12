@@ -18,9 +18,9 @@ module.exports = socket => {
   socket.on(`${Ev.MESSAGE_OUT}`, message => {
     logger.info(`${Ev.MESSAGE_OUT}: Message => ${message.userId} to ${message.recipientId}`);
 
-    socketController.onMessageOut(message).then(({ createdMessage, userChat, recipientChat }) => {
-      socket.emit(`${Ev.MESSAGE_IN}-${message.userId}`, userChat, createdMessage);
-      socket.emit(`${Ev.MESSAGE_IN}-${message.recipientId}`, recipientChat, createdMessage);
+    socketController.onMessageOut(message).then(({ userMessage, recipientMessage, userChat, recipientChat }) => {
+      socket.emit(`${Ev.MESSAGE_IN}-${message.userId}`, userChat, userMessage);
+      socket.emit(`${Ev.MESSAGE_IN}-${message.recipientId}`, recipientChat, recipientMessage);
     });
   });
 
